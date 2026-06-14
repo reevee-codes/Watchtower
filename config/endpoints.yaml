@@ -1,0 +1,16 @@
+endpoints:
+  - name: jsonplaceholder
+    url: https://jsonplaceholder.typicode.com/posts/1
+    description: Public fake REST API — very stable
+
+  - name: github_api
+    url: https://api.github.com
+    description: GitHub API root — production-grade uptime
+
+  - name: ipify
+    url: https://api.ipify.org?format=json
+    description: Returns public IP — extremely lightweight, high uptime
+
+  - name: dog_api
+    url: https://dog.ceo/api/breeds/image/random
+    description: Dog CEO random image API — good uptime, fun control endpoint
