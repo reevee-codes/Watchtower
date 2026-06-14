@@ -8,7 +8,7 @@ Każda faza to oddzielna sesja robocza. Zacznij od góry, odhaczaj po kolei.
 
 - [ ] Faza 0 — Code Review Fixes (poprawki przed dalszymi fazami)
 - [x] Faza 1 — Structured Logging + SQLite
-- [ ] Faza 2 — Evaluation Framework
+- [x] Faza 2 — Evaluation Framework
 - [ ] Faza 3 — Chaos Engineering Module
 - [ ] Faza 4 — FastAPI + Web Dashboard
 - [ ] Faza 5 — Multi-model Comparison

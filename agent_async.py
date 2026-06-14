@@ -7,6 +7,8 @@ import openai
 
 from decision.llm_decision import llm_decide
 from environment_async import CheckResult, check_all_endpoints
+from eval.ground_truth import ground_truth, rule_decide
+from eval.report import EvalRecord, generate_report, save_report
 from observability.db import init_db, insert_decision
 from observability.logger import log_decision
 
@@ -31,6 +33,7 @@ class Agent:
             for ep in endpoints
         }
         self._endpoints = endpoints
+        self._eval_records: list[EvalRecord] = []
         init_db()
 
     async def observe(self) -> list[CheckResult]:
@@ -63,6 +66,8 @@ class Agent:
             "latency_ms": s.last_latency_ms,
         }
         llm_start = time.monotonic()
+        rule = rule_decide(s.ok_count, s.error_count, s.timeout_count)
+        truth = ground_truth(s.ok_count, s.error_count, s.timeout_count)
         try:
             output = await llm_decide(llm_input)
             return {
@@ -72,6 +77,8 @@ class Agent:
                 "source": "llm",
                 "llm_latency_ms": (time.monotonic() - llm_start) * 1000,
                 "fallback_reason": None,
+                "rule_decision": rule,
+                "truth_decision": truth,
             }
         except (ValueError, openai.OpenAIError) as exc:
             output = self._fallback_decide(s)
@@ -82,6 +89,8 @@ class Agent:
                 "source": "fallback",
                 "llm_latency_ms": 0.0,
                 "fallback_reason": repr(exc),
+                "rule_decision": rule,
+                "truth_decision": truth,
             }
 
     def _fallback_decide(self, s: EndpointState) -> dict:
@@ -122,6 +131,15 @@ class Agent:
             }
             log_decision(entry)
             insert_decision(entry)
+            self._eval_records.append(EvalRecord(
+                endpoint_name=name,
+                step=self.step,
+                agent_decision=d["decision"],
+                source=d["source"],
+                rule_decision=d["rule_decision"],
+                truth_decision=d["truth_decision"],
+                llm_latency_ms=d["llm_latency_ms"],
+            ))
 
         return self.step >= 10
 
@@ -137,3 +155,8 @@ class Agent:
                 print(f"[AGENT] Finished after {self.step} steps.")
                 break
             await asyncio.sleep(3)
+        report_text = generate_report(self._eval_records)
+        print()
+        print(report_text)
+        saved = save_report(report_text)
+        print(f"\n[AGENT] Report saved → {saved}")
